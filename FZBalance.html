@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FZ Balance</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    input, button { padding: 0.5rem; margin: 0.2rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    .chart-container { width: 100%; max-width: 700px; margin: 2rem auto; }
+  </style>
+</head>
+<body>
+  <h1>📊 FZ Balance Tracker</h1>
+
+  <div>
+    <label>Glucose (mmol/L): <input type="number" id="glucose"></label>
+    <label>Uric Acid (µmol/L): <input type="number" id="uric"></label>
+    <label>Ketone (mmol/L): <input type="number" id="ketone"></label>
+    <button onclick="addEntry()">Save Entry</button>
+    <button onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <table id="history">
+    <thead>
+      <tr><th>Date</th><th>Glucose</th><th>Uric Acid</th><th>Ketone</th><th>Action</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="chart-container">
+    <canvas id="chart"></canvas>
+  </div>
+
+  <script>
+    const storageKey = 'fz_balance_entries';
+    let entries = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+    function addEntry() {
+      const glucose = document.getElementById('glucose').value;
+      const uric = document.getElementById('uric').value;
+      const ketone = document.getElementById('ketone').value;
+      if (!glucose || !uric || !ketone) return alert('Please fill in all fields');
+
+      const entry = {
+        date: new Date().toISOString(),
+        glucose: parseFloat(glucose),
+        uric: parseFloat(uric),
+        ketone: parseFloat(ketone)
+      };
+      entries.push(entry);
+      localStorage.setItem(storageKey, JSON.stringify(entries));
+      document.getElementById('glucose').value = '';
+      document.getElementById('uric').value = '';
+      document.getElementById('ketone').value = '';
+      renderTable();
+      renderChart();
+    }
+
+    function deleteEntry(index) {
+      entries.splice(index, 1);
+      localStorage.setItem(storageKey, JSON.stringify(entries));
+      renderTable();
+      renderChart();
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#history tbody');
+      tbody.innerHTML = '';
+      entries.slice().reverse().forEach((e, i) => {
+        const row = tbody.insertRow();
+        row.insertCell().textContent = new Date(e.date).toLocaleString();
+        row.insertCell().textContent = e.glucose;
+        row.insertCell().textContent = e.uric;
+        row.insertCell().textContent = e.ketone;
+        const btn = document.createElement('button');
+        btn.textContent = 'Delete';
+        btn.onclick = () => deleteEntry(entries.length - 1 - i);
+        row.insertCell().appendChild(btn);
+      });
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+      const labels = entries.map(e => new Date(e.date).toLocaleDateString());
+      const glucoseData = entries.map(e => e.glucose);
+      const uricData = entries.map(e => e.uric);
+      const ketoneData = entries.map(e => e.ketone);
+
+      if (window.chartRef) window.chartRef.destroy();
+      window.chartRef = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Glucose', data: glucoseData, borderColor: 'blue', fill: false },
+            { label: 'Uric Acid', data: uricData, borderColor: 'purple', fill: false },
+            { label: 'Ketone', data: ketoneData, borderColor: 'orange', fill: false }
+          ]
+        },
+        options: { responsive: true }
+      });
+    }
+
+    function exportCSV() {
+      let csv = 'Date,Glucose,Uric Acid,Ketone\n';
+      entries.forEach(e => {
+        csv += `${new Date(e.date).toLocaleString()},${e.glucose},${e.uric},${e.ketone}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'FZ_Balance_Log.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    renderTable();
+    renderChart();
+  </script>
+</body>
+</html>
