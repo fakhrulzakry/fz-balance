@@ -50,7 +50,14 @@
     if (!glucose || !uric || !ketone) return alert('Please fill in all fields');
 
     const data = {
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toLocaleString('en-MY', {
+      timeZone: 'Asia/Kuala_Lumpur',
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true}),
       glucose: parseFloat(glucose),
       uric: parseFloat(uric),
       ketone: parseFloat(ketone),
