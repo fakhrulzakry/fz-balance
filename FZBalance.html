@@ -38,59 +38,62 @@
     <tbody></tbody>
   </table>
 
-  <script>
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwefsdIO5NkVSI6OuaRhRL1JK9_kfDYZ4LL8O_cbi8kv7J4J19AauFU97X2TfFgADX1CA/exec'; // Replace with your deployed script URL
+<script>
+  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwefsdIO5NkVSI6OuaRhRL1JK9_kfDYZ4LL8O_cbi8kv7J4J19AauFU97X2TfFgADX1CA/exec';
 
-    function submitEntry() {
-      const glucose = document.getElementById('glucose').value;
-      const uric = document.getElementById('uric').value;
-      const ketone = document.getElementById('ketone').value;
-      const notes = document.getElementById('notes').value;
+  function submitEntry() {
+    const glucose = document.getElementById('glucose').value;
+    const uric = document.getElementById('uric').value;
+    const ketone = document.getElementById('ketone').value;
+    const notes = document.getElementById('notes').value;
 
-      if (!glucose || !uric || !ketone) return alert('Please fill in all fields');
+    if (!glucose || !uric || !ketone) return alert('Please fill in all fields');
 
-      const data = {
-        timestamp: new Date().toISOString(),
-        glucose: parseFloat(glucose),
-        uric: parseFloat(uric),
-        ketone: parseFloat(ketone),
-        notes: notes
-      };
+    const data = {
+      timestamp: new Date().toISOString(),
+      glucose: parseFloat(glucose),
+      uric: parseFloat(uric),
+      ketone: parseFloat(ketone),
+      notes: notes
+    };
 
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+    .then(() => {
+      alert('Entry submitted!');
+      fetchEntries();
+    })
+    .catch(() => alert('Submission failed.'));
+
+    document.getElementById('glucose').value = '';
+    document.getElementById('uric').value = '';
+    document.getElementById('ketone').value = '';
+    document.getElementById('notes').value = '';
+  }
+
+  function fetchEntries() {
+    fetch(GOOGLE_SCRIPT_URL + '?action=read')
+      .then(response => response.json())
+      .then(data => {
+        const tableBody = document.querySelector('#historyTable tbody');
+        tableBody.innerHTML = '';
+        data.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td>`;
+          tableBody.appendChild(tr);
+        });
       })
-      .then(() => {
-        alert('Entry submitted!');
-        fetchEntries();
-      })
-      .catch(() => alert('Submission failed.'));
+      .catch(() => alert('Failed to load entries.'));
+  }
 
-      document.getElementById('glucose').value = '';
-      document.getElementById('uric').value = '';
-      document.getElementById('ketone').value = '';
-      document.getElementById('notes').value = '';
-    }
-
-    function fetchEntries() {
-      fetch(GOOGLE_SCRIPT_URL + '?action=read')
-        .then(response => response.json())
-        .then(data => {
-          const tableBody = document.querySelector('#historyTable tbody');
-          tableBody.innerHTML = '';
-          data.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td>`;
-            tableBody.appendChild(tr);
-          });
-        })
-        .catch(() => alert('Failed to load entries.'));
-    }
-  </script>
+  // 🔄 Load entries automatically on page load
+  window.onload = fetchEntries;
+</script>
 </body>
 </html>
