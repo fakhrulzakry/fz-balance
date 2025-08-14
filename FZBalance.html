@@ -1,30 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FZ Balance (Cloud)</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FZ Balance Tracker</title>
   <style>
-    body { font-family: sans-serif; margin: 2rem; }
-    input, button, textarea { padding: 0.5rem; margin: 0.2rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-    .chart-container { width: 100%; max-width: 700px; margin: 2rem auto; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, textarea, button { margin: 5px; padding: 8px; font-size: 1rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #f4f4f4; }
+    textarea { width: 100%; max-width: 400px; }
   </style>
 </head>
 <body>
-  <h1>📊 FZ Balance Tracker (Google Sheets)</h1>
+  <h1>📊 FZ Balance Tracker (Cloud)</h1>
 
   <div>
-    <label>Glucose (mmol/L): <input type="number" id="glucose"></label>
-    <label>Uric Acid (µmol/L): <input type="number" id="uric"></label>
-    <label>Ketone (mmol/L): <input type="number" id="ketone"></label><br>
-    <label>Notes:<br><textarea id="notes" rows="2" cols="50"></textarea></label><br>
-    <button onclick="submitEntry()">Submit to Google Sheet</button>
-    <button onclick="fetchEntries()">🔄 Load Past Entries</button>
+    <label>Glucose (mmol/L): <input type="number" id="glucose" step="0.1"></label><br>
+    <label>Uric Acid (µmol/L): <input type="number" id="uric" step="1"></label><br>
+    <label>Ketone (mmol/L): <input type="number" id="ketone" step="0.1"></label><br>
+    <label>Notes:<br><textarea id="notes" rows="2"></textarea></label><br>
+    <button onclick="submitEntry()">✅ Submit</button>
   </div>
 
+  <h2>🕓 History</h2>
   <table id="historyTable">
     <thead>
       <tr>
@@ -38,69 +38,78 @@
     <tbody></tbody>
   </table>
 
-<script>
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwefsdIO5NkVSI6OuaRhRL1JK9_kfDYZ4LL8O_cbi8kv7J4J19AauFU97X2TfFgADX1CA/exec';
+  <script>
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwefsdIO5NkVSI6OuaRhRL1JK9_kfDYZ4LL8O_cbi8kv7J4J19AauFU97X2TfFgADX1CA/exec';
 
-  function submitEntry() {
-    const glucose = document.getElementById('glucose').value;
-    const uric = document.getElementById('uric').value;
-    const ketone = document.getElementById('ketone').value;
-    const notes = document.getElementById('notes').value;
+    function submitEntry() {
+      const glucose = document.getElementById('glucose').value;
+      const uric = document.getElementById('uric').value;
+      const ketone = document.getElementById('ketone').value;
+      const notes = document.getElementById('notes').value;
 
-    if (!glucose || !uric || !ketone) return alert('Please fill in all fields');
+      if (!glucose || !uric || !ketone) return alert('Please fill in all fields');
 
-    const data = {
-      timestamp: new Date().toLocaleString('en-MY', {
-      timeZone: 'Asia/Kuala_Lumpur',
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true}),
-      glucose: parseFloat(glucose),
-      uric: parseFloat(uric),
-      ketone: parseFloat(ketone),
-      notes: notes
-    };
+      const data = {
+        timestamp: new Date().toLocaleString('en-MY', {
+          timeZone: 'Asia/Kuala_Lumpur',
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        }),
+        glucose: parseFloat(glucose),
+        uric: parseFloat(uric),
+        ketone: parseFloat(ketone),
+        notes: notes
+      };
 
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    })
-    .then(() => {
-      alert('Entry submitted!');
-      fetchEntries();
-    })
-    .catch(() => alert('Submission failed.'));
-
-    document.getElementById('glucose').value = '';
-    document.getElementById('uric').value = '';
-    document.getElementById('ketone').value = '';
-    document.getElementById('notes').value = '';
-  }
-
-  function fetchEntries() {
-    fetch(GOOGLE_SCRIPT_URL + '?action=read')
-      .then(response => response.json())
-      .then(data => {
-        const tableBody = document.querySelector('#historyTable tbody');
-        tableBody.innerHTML = '';
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td>`;
-          tableBody.appendChild(tr);
-        });
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
       })
-      .catch(() => alert('Failed to load entries.'));
-  }
+      .then(() => {
+        alert('Entry submitted!');
+        fetchEntries();
+        clearForm();
+      })
+      .catch(() => alert('Submission failed.'));
+    }
 
-  // 🔄 Load entries automatically on page load
-  window.onload = fetchEntries;
-</script>
+    function clearForm() {
+      document.getElementById('glucose').value = '';
+      document.getElementById('uric').value = '';
+      document.getElementById('ketone').value = '';
+      document.getElementById('notes').value = '';
+    }
+
+    function fetchEntries() {
+      fetch(GOOGLE_SCRIPT_URL + '?action=read')
+        .then(response => response.json())
+        .then(data => {
+          const tableBody = document.querySelector('#historyTable tbody');
+          tableBody.innerHTML = '';
+          data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${row[0]}</td>
+              <td>${row[1]}</td>
+              <td>${row[2]}</td>
+              <td>${row[3]}</td>
+              <td>${row[4]}</td>`;
+            tableBody.appendChild(tr);
+          });
+        })
+        .catch(() => alert('❌ Failed to load entries.'));
+    }
+
+    // Auto load on page open
+    window.onload = fetchEntries;
+  </script>
 </body>
 </html>
